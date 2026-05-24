@@ -1,4 +1,4 @@
 interface:
-  display_name: "Ò½±£½áËãÖªÊ¶¿â"
-  short_description: "ÉÏº£Ò½±£½áËã¡¢ÉÏ´«¡¢¹«Ê½ÓëÏµÍ³ÊµÏÖÖªÊ¶ skill¡£"
-  default_prompt: "Use $medical-insurance-settlement toÊáÀíÒ½±£½áËã¹æÔò¡¢¹«Ê½¡¢ÉÏ´«·½Ê½ºÍÏµÍ³Éè¼ÆÒªµã¡£"
+  display_name: "åŒ»ä¿ç»“ç®—çŸ¥è¯†åº“"
+  short_description: "ä¸Šæµ·åŒ»ä¿ç»“ç®—ã€ä¸Šä¼ å…¬å¼ã€ç³»ç»Ÿå®ç°çŸ¥è¯† skill"
+  default_prompt: "Use $medical-insurance-settlement toåˆ†æåŒ»ä¿ç»“ç®—è§„åˆ™ã€å…¬å¼ã€ä¸Šä¼ æ–¹å¼ã€ç³»ç»Ÿå®ç°è¦ç‚¹ã€‚"

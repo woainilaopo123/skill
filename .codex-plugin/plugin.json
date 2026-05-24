@@ -1,0 +1,29 @@
+{
+  "name": "my-skills",
+  "version": "1.0.0",
+  "description": "Custom skills for code change control and medical insurance settlement",
+  "author": {
+    "name": "Administrator"
+  },
+  "license": "MIT",
+  "keywords": [
+    "code-change",
+    "medical-insurance",
+    "settlement"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "My Skills",
+    "shortDescription": "Custom skills for code change control and medical insurance settlement",
+    "longDescription": "A collection of custom skills including code change standard workflow and medical insurance settlement knowledge for Shanghai HIS scenarios.",
+    "developerName": "Administrator",
+    "category": "Productivity",
+    "capabilities": [
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use code-change-standard to handle this code modification task",
+      "Use medical-insurance-settlement to analyze insurance settlement logic"
+    ]
+  }
+}
