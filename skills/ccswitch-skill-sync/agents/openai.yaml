@@ -1,4 +1,0 @@
-interface:
-  display_name: "CC Switch Skill Sync"
-  short_description: "把本地 skill 自动新增或更新到 cc-switch 技能目录"
-  default_prompt: "使用 $ccswitch-skill-sync 把这个本地 skill 同步到 cc-switch，优先用脚本完成新增或更新。"
