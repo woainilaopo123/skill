@@ -1,117 +1,118 @@
-# Settlement Modes
+# 结算模式
 
-## Purpose
+## 用途
 
-Use this reference when the task is to classify settlement paths, explain which route a patient follows, or compare National platform, Shanghai phase-5, and local calculation.
+当任务是判断患者走哪条医保结算路径、比较国家医保与上海五期差异、说明本地计算与混合结算时，优先读取本文件。
 
-## Five Main Modes
+## 五大主要结算模式
 
-### 1. National platform real-time settlement
+### 1. 国家医保实时结算
 
-Definition:
-- HIS uploads registration, admission, detail, and settlement requests.
-- The insurance center calculates and returns reimbursement results.
+定义：
+- HIS 上传挂号、入院、费用明细、结算请求
+- 医保中心负责计算并返回报销结果
 
-Typical use:
-- urban employees
-- urban-rural residents
-- cross-region settlement
-- other mainstream insured groups not diverted to Shanghai phase-5
+常见场景：
+- 城镇职工
+- 城乡居民
+- 异地医保
+- 未被分流到上海五期的主流医保人群
 
-Key point:
-- HIS usually does not rely on local reimbursement-ratio configuration for the final reimbursement amount.
-- HIS still needs to upload required flags and compliant detail data.
+关键点：
+- HIS 通常不负责最终报销金额的核心计算
+- 但 HIS 仍需上传合规的费用明细和必要标志位
 
-### 2. Shanghai phase-5 real-time settlement
+### 2. 上海五期实时结算
 
-Definition:
-- HIS first computes upload-related amounts according to local rules.
-- HIS calls phase-5 detail-upload and charge or confirm interfaces.
-- The phase-5 center returns reimbursement and patient-borne amounts.
+定义：
+- HIS 先按本地规则计算上传口径相关金额
+- 再调用五期明细上传、收费、确认等接口
+- 五期中心返回报销金额和个人承担金额
 
-Typical use:
-- mutual-aid hardship assistance
-- civil-affairs hardship assistance
-- work injury
-- some cadre-healthcare-related groups
-- some online or internet-hospital transactions
+常见场景：
+- 互助帮困
+- 民政帮困
+- 工伤
+- 部分干保相关人群
+- 部分互联网医院或在线支付交易
 
-Key point:
-- HIS has stronger pre-upload calculation responsibility than in National platform mode.
+关键点：
+- 与国家医保相比，HIS 对“上传前金额准备”承担更多责任
 
-### 3. HIS local calculation
+### 3. HIS 本地计算
 
-Definition:
-- HIS calculates settlement amounts by local rules without relying on the center for reimbursement computation.
+定义：
+- HIS 按本地规则完成医保结算计算，不依赖医保中心返回报销结果
 
-Typical use:
-- family-planning categories
-- retired special groups
-- local legacy categories
+常见场景：
+- 计生
+- 部分离休或特殊人员
+- 一些地方遗留医保类型
 
-Key point:
-- local configuration correctness is critical
-- historical rule changes may require recalculation policy
+关键点：
+- 配置正确性非常重要
+- 历史规则变更时常需要考虑重算策略
 
-### 4. Shanghai phase-5 plus local secondary calculation
+### 4. 上海五期 + 本地二次计算
 
-Definition:
-- first complete Shanghai phase-5 settlement
-- then perform a second local reimbursement calculation on top of the returned phase-5 results
+定义：
+- 先走上海五期实时结算
+- 再在五期返回结果基础上进行本地二次报销计算
 
-Typical use:
-- cadre healthcare scenarios in the source materials
+常见场景：
+- 文档中的干保、保健类场景
 
-Key point:
-- this is a layered reimbursement path, not a mutually exclusive path choice
+关键点：
+- 这不是“二选一”
+- 而是“实时结算后再叠加本地规则”
 
-### 5. Local calculation plus real-time upload
+### 5. 本地计算 + 实时上传
 
-Definition:
-- HIS completes local calculation first
-- then uploads settlement information through a designated interface
+定义：
+- HIS 先完成本地结算计算
+- 再通过指定接口实时上传结算信息
 
-Typical use:
-- pediatric insurance
-- student insurance
-- pediatric and student dual-voucher inpatient scenarios
+常见场景：
+- 儿保
+- 学保
+- 儿保学保双凭证住院场景
 
-Key point:
-- reimbursement calculation is local-first and upload-second
+关键点：
+- 先本地算，再上传，不是中心实时算报销
 
-## Routing Questions
+## 场景判断顺序
 
-When explaining a patient's settlement path, answer these in order:
+判断一个患者走哪条路径时，优先回答这几个问题：
 
-1. Is this patient center-calculated or locally calculated?
-2. If center-calculated, is the path National platform or Shanghai phase-5?
-3. Is there a second-stage local calculation afterward?
-4. Is there a post-settlement upload requirement?
+1. 这个患者是中心算，还是本地算？
+2. 如果是中心算，走国家医保还是上海五期？
+3. 结算后是否还有二次本地计算？
+4. 是否存在结算后上传要求？
 
-## Special Cases
+## 特殊场景
 
-### Dual voucher
+### 双凭证
 
-For pediatric and student dual-voucher scenarios:
-- calculate student branch once
-- calculate pediatric branch once
-- combine the two reimbursement amounts
-- cap the result so the total reimbursement does not exceed the insurance-scope amount
+儿保学保双凭证常见处理方式：
+- 学保计算一次
+- 儿保计算一次
+- 两次报销金额叠加
+- 叠加后不能超过医保结算范围金额
 
-### Emergency fallback
+### 应急切换
 
-The source materials describe an emergency rule:
-- if the National platform is unavailable, categories that normally use National interfaces may be switched to Shanghai phase-5 based on center instructions
+资料中提到的应急规则：
+- 当国家医保平台故障时，原本走国家医保接口的类型，可能根据中心要求切换到上海五期交易
 
-Mention this when discussing contingency design or fault handling.
+当任务涉及容灾、故障切换、平台不可用时，应优先提到这一点。
 
-## Suggested Answer Pattern
+## 推荐回答模板
 
 ```text
-insured type or scenario
--> settlement mode
--> what HIS calculates locally
--> what HIS uploads
--> what the center returns
--> whether a second calculation or second upload follows
+参保类型或业务场景
+-> 结算模式
+-> HIS 本地计算内容
+-> HIS 上传内容
+-> 中心返回内容
+-> 是否有二次计算或二次上传
 ```

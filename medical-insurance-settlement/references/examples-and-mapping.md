@@ -1,151 +1,119 @@
-# Examples And Field Mapping
+# 示例、映射与测试思路
 
-## Purpose
+## 用途
 
-Use this reference when the task is to explain formulas with examples, map invoice semantics to interface fields, or give product and testing teams a concrete calculation narrative.
+当任务需要用例子解释公式、把发票展示金额映射到接口字段、或者给产品与测试输出更具体的计算样例时，优先读取本文件。
 
-## Example 1: Basic Amount Split
+## 示例一：基础金额拆分
 
-Scenario:
-- total charge: `100.00`
-- one full-self-pay item: `20.00`
-- one category-paid item: `16.00`, with `30%` category self-burden
-- remaining compliant amount: `64.00`
+场景：
+- 总费用 `100.00`
+- 一项全自费 `20.00`
+- 一项乙类或分类给付项目 `16.00`，其中 `30%` 为分类自负
+- 其余医保内金额 `64.00`
 
-Calculation:
-
-```text
-yibao-fanwei-zonge = 16.00 + 64.00 = 80.00
-fenlei-zifu = 16.00 * 30% = 4.80
-jiaoyi-zonge = 80.00 - 4.80 = 75.20
-fei-yibao-zifei = 20.00
-```
-
-Interpretation:
-- `80.00` is inside insurance scope
-- `4.80` is inside insurance scope but patient-first
-- `75.20` is the effective settlement base
-- `20.00` is outside insurance scope
-
-## Example 2: National Platform Formula Set
-
-Use when the center returns standardized settlement values.
+计算：
 
 ```text
-zong-feiyong = fei-yibao-zonge + yibao-fanwei-zonge
-fenlei-zifu = xianxing-zifu
-jiaoyi-zonge = yibao-fanwei-zonge - fenlei-zifu
-yibao-baoxiao = jijin-zhifu-zonge
-geren-zifu-total = jiaoyi-zonge - yibao-baoxiao
-geren-zifu = yibao-fanwei-zonge - yibao-baoxiao
-geren-zifei = quan-zifei + chao-xianjia-zifei
+医保结算范围费用总额 = 16.00 + 64.00 = 80.00
+分类自负 = 16.00 * 30% = 4.80
+交易费用总额 = 80.00 - 4.80 = 75.20
+非医保结算范围个人自费 = 20.00
 ```
 
-Key explanation:
-- many raw fields come directly from interface returns
-- HIS should not replace center-returned reimbursement with a locally derived number unless the business explicitly requires a secondary local layer
+解释：
+- `80.00` 在医保范围内
+- `4.80` 也在医保范围内，但先由个人承担
+- `75.20` 才是真正进入报销结算的费用基数
+- `20.00` 完全在医保范围外
 
-## Example 3: Shanghai phase-5 Formula Set
+## 示例二：国家医保公式组
 
-The materials describe the returned values like this:
+适用于中心接口直接返回标准结算值的场景：
 
 ```text
-zong-feiyong = fei-yibao-zonge + yibao-fanwei-zonge
-fenlei-zifu = yibao-fanwei-zonge - jiaoyi-zonge
-yibao-baoxiao =
-  qifuduan-account +
-  tongchou-account +
-  fujia-account +
-  tongchou-pay +
-  fujia-pay
-
-jiaoyi-zonge =
-  qifuduan-account +
-  tongchou-account +
-  fujia-account +
-  qifuduan-cash +
-  tongchou-cash +
-  fujia-cash +
-  tongchou-pay +
-  fujia-pay
-
-geren-zifu-total =
-  qifuduan-cash +
-  tongchou-cash +
-  fujia-cash
-
-geren-zifu = yibao-fanwei-zonge - yibao-baoxiao
-geren-zifei = fei-yibao-zonge
+患者费用总额 = 非医保结算范围金额 + 医保结算范围金额
+分类自付 = 先行自付金额
+交易费用总额 = 医保结算范围金额 - 分类自付
+医保报销金额 = 基金支付总额
+个人自付 = 交易费用总额 - 医保报销金额
+个人自负 = 医保结算范围金额 - 医保报销金额
+个人自费 = 全自费金额 + 超限价自费费用
 ```
 
-Key explanation:
-- phase-5 reimbursement excludes the cash-paid segments
-- phase-5 self-pay inside settlement mainly comes from the cash-paid segments
+解释重点：
+- 很多关键字段直接来自国家医保接口返回
+- 如果没有明确二次结算要求，不要用本地推导值覆盖中心返回值
 
-## Example 4: Local Calculation
+## 示例三：上海五期公式组
 
-Illustrative scenario:
-- total charge: `1000`
-- item-level self-pay ratio yields non-insurance amount `200`
-- insurance-scope amount becomes `800`
-- fee-category personal ratio is `10%`
-
-Then:
+资料里的典型表达：
 
 ```text
-geren-zifu-total = 200 + 800 * 10% = 280
-yibao-baoxiao = 1000 - 280 = 720
+患者费用总额 = 非医保结算范围金额 + 医保结算范围金额
+分类自付 = 医保结算范围金额 - 交易费用总额
+医保报销金额 = 起付段账户支付 + 统筹段账户支付 + 附加段账户支付 + 统筹支付 + 附加支付
+交易费用总额 = 起付段账户支付 + 统筹段账户支付 + 附加段账户支付 + 起付段现金支付 + 统筹段现金支付 + 附加段现金支付 + 统筹支付 + 附加支付
+个人自付 = 起付段现金支付 + 统筹段现金支付 + 附加段现金支付
+个人自负 = 医保结算范围金额 - 医保报销金额
+个人自费 = 非医保结算范围金额
 ```
 
-This is an explanatory model, not a guarantee that every local fee category uses this exact rule.
+解释重点：
+- 五期里的“医保报销金额”通常不含现金部分
+- 五期里的“个人自付”主要对应医保范围内现金支付段
 
-## Example 5: Local Calculation Plus Upload
+## 示例四：本地计算
 
-Pediatric or student insurance pattern:
+示意场景：
+- 总费用 `1000`
+- 按项目规则拆出非医保金额 `200`
+- 医保范围金额 `800`
+- 当前费别的个人承担比例 `10%`
 
-1. HIS calculates local reimbursement
-2. obtain values such as:
-   - non-insurance amount
-   - insurance-scope amount
-   - category self-burden
-   - personal payment
-   - reimbursement amount
-3. upload settlement information through the pediatric or student related real-time interface
+则：
 
-## Example 6: Cadre Healthcare Secondary Calculation
+```text
+个人自付 = 200 + 800 * 10% = 280
+医保报销 = 1000 - 280 = 720
+```
 
-Pattern:
-1. call Shanghai phase-5 settlement
-2. receive phase-5 returned amounts
-3. use cadre-healthcare ratio logic for secondary reimbursement
-4. combine results into the final settlement outcome
+说明：
+- 这是解释模型
+- 真实生产规则可能还会叠加上下限、特殊比例、试点药品、组套等因素
 
-Important caution:
-- explicitly separate first-stage center settlement from second-stage local reimbursement logic
+## 示例五：本地计算 + 上传
 
-## Invoice Or Display Mapping
+儿保或学保场景常见步骤：
 
-When the user asks how invoice amounts relate to settlement fields, use this mapping language:
+1. HIS 本地计算报销结果
+2. 得到：
+   - 非医保金额
+   - 医保范围金额
+   - 分类自负
+   - 个人承担金额
+   - 医保报销金额
+3. 再通过儿保或学保相关接口上传结算信息
 
-- outside-scope amount corresponds to full self-pay and over-limit self-pay
-- insurance-scope total corresponds to compliant-scope amount plus category self-burden
-- transaction total is the effective center settlement base
-- category self-burden is the difference between scope total and transaction total
-- personal outside-scope self-pay is not the same as personal burden after reimbursement
+## 示例六：干保二次结算
 
-## Testing Checklist
+常见步骤：
 
-When deriving test cases, cover at least these:
+1. 先调用上海五期结算
+2. 取得五期返回值
+3. 按干保规则做二次本地报销
+4. 汇总为最终结算结果
 
-1. only full self-pay items
-2. category-paid item with category self-burden
-3. over-limit self-pay due to capped price
-4. mixed drug and non-drug ratios
-5. bundle settlement one-set vs two-set
-6. restriction-use flag true vs false
-7. high-price-drug quota rule
-8. National platform path
-9. Shanghai phase-5 path
-10. local calculation path
-11. local calculation plus upload path
-12. phase-5 plus local secondary reimbursement path
+解释重点：
+- 一定要区分第一次实时结算和第二次本地补充报销
+
+## 发票口径与结算字段映射
+
+当用户问“发票上的金额分别对应什么”时，优先这样解释：
+
+- `非医保结算范围费用总额`：对应全自费、超限价自费等医保外金额
+- `医保结算范围费用总额`：对应医保政策范围金额，含分类自负
+- `交易费用总额`：真正进入医保结算的费用基数
+- `分类自付/分类自负`：医保认可但需先由个人承担的部分
+- `个人自费`：医保范围外个人承担
+- `个人自负`：医保范围内报销后仍由个人承担

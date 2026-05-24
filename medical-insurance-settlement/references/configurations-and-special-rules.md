@@ -1,162 +1,165 @@
-# Configurations And Special Rules
+# 配置项与特殊规则
 
-## Purpose
+## 用途
 
-Use this reference when the task is to explain what must be configured before settlement, or when the user asks about business rules that affect amount calculation and upload fields.
+当任务是解释结算前需要维护哪些配置、某个特殊规则如何影响金额计算和上传字段时，优先读取本文件。
 
-## Core Configuration Items
+## 核心配置项
 
-### Self-pay ratio and category-self-burden flags
+### 自费标志、自费比例、分类自负标志
 
-Common fields:
-- outpatient self-pay flag
-- outpatient self-pay ratio
-- outpatient category-self-burden flag
-- inpatient self-pay flag
-- inpatient self-pay ratio
-- inpatient category-self-burden flag
+常见字段：
+- 门诊自费标志
+- 门诊自费比例
+- 门诊分类自付标志
+- 住院自费标志
+- 住院自费比例
+- 住院分类自付标志
 
-Use:
-- local calculation
-- phase-5 upload amount calculation
-- insurance-scope and non-scope split
+主要作用：
+- 本地计算
+- 五期上传口径金额计算
+- 医保范围与非医保范围拆分
 
-### Fixed upper limit
+### 固定上限
 
-Use for items such as:
-- registration fee
-- bed fee
-- artificial lens
+适用示例：
+- 挂号费
+- 床位费
+- 人工晶体
 
-Rule:
-- amount within limit can participate according to policy
-- amount above limit becomes self-pay or category-self-burden depending on the rule
+规则：
+- 上限内按医保规则参与结算
+- 上限外按自费或分类自负处理，取决于政策和配置
 
-### Fixed upper limit plus fixed ratio
+### 固定上限 + 固定比例
 
-Use for some pilot-drug payment-standard scenarios.
+适用于部分试点药品支付标准场景。
 
-Rule:
-- within capped standard: settle by ratio
-- above standard: excess becomes category self-burden or self-pay according to policy
+规则：
+- 上限内按比例计算
+- 超上限部分转为分类自负或自费
 
-### Quota self-burden or high-price-drug rule
+### 定额自负 / 高价药规则
 
-Rule:
-- amount within quota can be reimbursable
-- amount outside quota becomes self-pay
+规则：
+- 定额内可报
+- 定额外自费
 
-Additional note:
-- these drugs often require special markers
-- outpatient charging may require separate settlement
-- some work-injury inpatient scenarios also require separate settlement
+补充说明：
+- 这类药品通常需要特殊标志
+- 门诊收费时可能要求单独结算
+- 某些工伤住院场景也可能要求单独结算
 
-### Bundle settlement or group code
+### 组套 / 合并结算编号
 
-Use when multiple materials belong to one policy bundle, such as artificial-joint scenarios.
+适用于多个耗材属于同一政策组套的场景，例如人工关节。
 
-Rule:
-- multiple material records share one bundle identifier
-- reimbursement is controlled by the policy cap for the bundle
-- one-set and two-set cases may use different bundle codes and limits
+规则：
+- 多条明细共用一个组套标识
+- 是否可报、最高可报金额受组套总限额控制
+- 一套与两套可能有不同组套编号和限额
 
-Implementation note:
-- National-platform upload may require the bundle number
-- local and phase-5 logic may need to determine one-set vs two-set before upload
+实现意义：
+- 国家医保上传时可能需要传组套编号
+- 本地和五期逻辑可能都要先判断一套还是两套
 
-### Restriction-use flag
+### 医保限用标志
 
-Rule:
-- if the restriction condition is met, settle by insurance rules
-- if not met, settle as self-pay
+规则：
+- 符合限用条件时按医保规则结算
+- 不符合时按自费结算
 
-System note:
-- prescribing workflow may need a prompt for the doctor
-- National detail upload may use the doctor's choice in `hosp_appr_flag`
-- phase-5 or local calculation must also use this choice to compute amounts
+系统意义：
+- 医生开方时可能需要提示并做选择
+- 国家医保明细上传可能使用 `hosp_appr_flag`
+- 五期和本地计算也需要根据该结果影响金额计算
 
-### Unit conversion factor
+### 单位转换系数
 
-Typical use:
-- uploading Chinese herbal medicine quantity and unit price by gram
-- splitting quota-drug quantities
-- pilot-drug payment-standard calculation
+常见用途：
+- 中草药按克上传数量与单价
+- 定额药品拆零数量换算
+- 部分试点药品支付标准计算
 
-### Dual-voucher ratio configuration
+### 双凭证比例配置
 
-Use for pediatric and student dual-voucher scenarios where the same drug or item is paid differently by each branch.
+适用于儿保、学保双凭证场景，同一项目在两套规则下支付比例不同。
 
-### Special ratio configuration
+### 特殊比例配置
 
-Use when:
-- the same item has different self-pay ratios by insurance type or fee category
-- different effective dates apply
-- segmented or all-history execution rules exist
+适用场景：
+- 同一项目在不同医保类型或费别下比例不同
+- 不同时间段规则不同
+- 长住院患者涉及历史比例切换
 
-Historical-rule note:
-- if a ratio changes during a long stay, the system may need segmented application or full recalculation by the latest rule
+常见要求：
+- 支持启用日期、停用日期
+- 支持分段执行或全量按新规则执行
 
-## Platform-Visible Special Flags
+## 平台相关特殊标志
 
-### Reduction or relief flag
+### 减负标志
 
-Used for severe-disease reduction or special relief scenarios, such as:
-- uremic dialysis reduction
-- anti-rejection therapy after renal transplant
-- psychiatric expense reduction
+适用于大病减负等特殊场景，例如：
+- 尿毒症透析减负
+- 肾移植抗排异减负
+- 精神病减负
 
-These may map to:
-- National detail-upload extension bits
-- phase-5 reduction-related indicators
+这些信息可能体现为：
+- 国家医保扩展字段中的特定位
+- 五期结算相关标志位
 
-### High-price-drug indicator
+### 高价药标志
 
-Needed when an item falls into special high-price-drug handling.
+用于表示某条药品走高价药特殊处理。
 
-### Bundle number
+### 组套编号
 
-Needed where policy requires group-settlement identification.
+用于标识该明细属于哪个医保政策组套。
 
-### Single-herb vs compound-herb indicator
+### 单复方标志
 
-Needed in some Chinese-herb scenarios where reimbursement depends on whether the prescription is single-herb or compound-herb.
+在某些中草药场景下，需要根据是否单方或复方决定上传值和结算规则。
 
-## Local Calculation Model
+## 本地计算模型
 
-The source materials describe a two-layer local calculation idea:
+资料反复体现的本地计算思路通常分两层：
 
-1. split detail amounts into:
-   - non-insurance amount
-   - insurance-scope amount
-   - category self-burden
-   - transaction amount
+1. 先按项目明细拆出：
+   - 非医保金额
+   - 医保范围金额
+   - 分类自负
+   - 交易费用金额
 
-2. apply fee-category reimbursement rules:
-   - by lower limit and upper limit
-   - by drug vs non-drug ratios
-   - by segmented bands
-   - by special override rules
+2. 再按费别报销规则计算：
+   - 起付线、上下限
+   - 药品 / 非药品比例
+   - 分段比例
+   - 特殊覆盖规则
 
-Settlement formulas may be based on:
-- insurance-scope total amount
-- transaction amount
+本地公式可能基于两类口径：
+- 基于医保结算范围费用总额
+- 基于交易费用总额
 
-Typical distinction:
-- use insurance-scope total when there is no settlement cap
-- use transaction amount when the rule has a single-settlement cap, such as some pediatric single-disease scenarios
+典型区别：
+- 无单次限额时，常按医保范围金额处理
+- 存在单次结算限额时，常按交易费用总额处理，例如部分儿保单病种
 
-## Priority Rules
+## 优先级规则
 
-When multiple ratio sources exist, explain the priority explicitly. The source materials imply patterns such as:
-- patient-specific special ratio overrides general fee-category ratio
-- cadre-patient special item ratio may override generic cadre ratio
-- dual-voucher scenarios may require separate student and pediatric runs, then capped aggregation
+当多个比例来源同时存在时，要优先明确覆盖顺序。资料中隐含的常见模式包括：
 
-## Operational Requirements
+- 病人特批比例优先于普通费别比例
+- 干保病人特殊项目比例优先于一般干保比例
+- 双凭证场景需要学保、儿保分别计算，再合并并受上限控制
 
-The source materials repeatedly imply these system capabilities:
-- maintain effective-date history
-- prevent overlapping active records for the same rule dimension
-- support enable or disable instead of destructive deletion
-- support query and audit log
-- support segmented execution or full execution after rule changes
+## 维护要求
+
+这些规则在系统中通常应支持：
+- 历史记录
+- 生效时间段
+- 禁止同维度有效记录重叠
+- 停用而非直接删除
+- 查询、审计日志
+- 比例变更后的分段执行或全量执行策略

@@ -1,156 +1,156 @@
-# Upload Methods And Data Synchronization
+# 上传方式与同步机制
 
-## Purpose
+## 用途
 
-Use this reference when the task is to explain upload methods, interface timing, directory import, code maintenance, or the difference between settlement upload and catalog synchronization.
+当任务是解释“医保上传方式”、接口时机、目录同步、编码维护、前置机导入时，优先读取本文件。
 
-## Upload Has Multiple Meanings
+## 先明确：上传不是一种东西
 
-In this domain, `upload` may refer to:
+在医保领域，“上传”至少可能指以下几类动作：
 
-1. real-time settlement interface calls
-2. post-settlement result upload
-3. front-machine shared-directory or FTP file import
-4. website-announcement-driven Excel import
-5. DBF export to a front machine
-6. database polling synchronization to a front-machine database
+1. 实时结算接口调用
+2. 本地结算后的结果上传
+3. 前置机共享目录或 FTP 文件导入
+4. 网站公告驱动的 Excel 导入
+5. DBF 文件导出到前置机
+6. 数据库轮询同步到前置机数据库
 
-Always clarify which one the user means.
+回答前要先判断用户说的“上传”是哪一类。
 
-## Settlement Transaction Upload
+## 一、结算交易上传
 
-### National Healthcare Security Platform
+### 国家医保平台
 
-Typical interface stages from the source materials:
-- outpatient registration `2201`
-- inpatient admission `2401`
-- detail upload `2301` or `2204`
-- settlement or confirmation interfaces
+常见接口阶段：
+- 门诊挂号 `2201`
+- 入院办理 `2401`
+- 明细上传 `2301` / `2204`
+- 结算或确认接口
 
-Important characteristics:
-- registration or admission generates `mdtrt_id`
-- in Shanghai scenarios, settlement requests may need to use the `mdtrt_id` from registration or admission
-- special flags must still be uploaded even when the center performs final reimbursement calculation
+关键特征：
+- 挂号或入院后会生成 `mdtrt_id`
+- 在上海场景中，后续结算通常需要引用这个就诊 ID
+- 即便最终报销金额由中心计算，特殊标志位仍然需要 HIS 上传
 
-Common uploaded fields or flags:
-- reduction or relief flags
-- high-price-drug indicators
-- approval or restriction result flags such as `hosp_appr_flag`
-- bundle number or group-settlement code
-- single-herb vs compound-herb indicator where required
+常见上传内容：
+- 减负标志
+- 高价药标志
+- 限用审批结果，如 `hosp_appr_flag`
+- 组套编号
+- 单复方标志
 
-### Shanghai phase-5
+### 上海五期
 
-Typical flow:
-1. HIS reads local configuration
-2. HIS computes upload-related amounts such as:
-   - transaction amount
-   - insurance-scope amount
-   - non-insurance-scope amount
-   - quota-payment or reduction flags
-   - bundle code
-3. HIS uploads fee details
-4. HIS calls outpatient charge or inpatient charge plus confirmation interfaces
-5. center returns reimbursement and patient-borne results
+常见流程：
+1. HIS 读取本地配置
+2. HIS 计算上传口径相关金额，例如：
+   - 交易费用金额
+   - 医保结算范围金额
+   - 非医保结算范围金额
+   - 定额支付或减负标志
+   - 组套编号
+3. HIS 上传费用明细
+4. HIS 调用门诊收费或住院收费及确认接口
+5. 中心返回报销和个人承担结果
 
-Important characteristic:
-- phase-5 upload depends heavily on HIS-side pre-calculation
+关键特征：
+- 五期上传高度依赖 HIS 在上传前先把金额算对
 
-### Pediatric or student insurance
+### 儿保 / 学保
 
-Typical flow:
-1. HIS performs local calculation
-2. HIS obtains local reimbursement result
-3. HIS calls the pediatric-fund or related upload interface
-4. settlement information is uploaded in real time
+常见流程：
+1. HIS 先进行本地计算
+2. 得到本地报销结果
+3. 调用少儿基金或相关上传接口
+4. 实时上传结算信息
 
-Important characteristic:
-- reimbursement calculation is local-first, upload-second
+关键特征：
+- 先本地算，再上传结果
 
-### Cadre healthcare
+### 干保
 
-Two patterns are described in the source:
+资料里至少有两种方式：
 
-#### Phase 1
+#### 一期
 
-- export daily data in the required DBF format
-- upload through the cadre front machine
+- 按日导出 DBF 数据
+- 通过干保前置机上传
 
-#### Phase 2
+#### 二期
 
-- after a transaction occurs, synchronize data to the cadre front-machine database within about 10 minutes
-- the existing implementation described in the source uses scheduled database polling
+- 交易发生后，在约 10 分钟内同步到干保前置机数据库
+- 现有实现方式描述为数据库作业轮询上传
 
-## Catalog And Base-Data Synchronization
+## 二、目录与基础数据同步
 
-### Western and Chinese medicine catalogs
+### 西药目录、中草药目录
 
-Source:
-- insurance front machine
-- shared directory or FTP
+来源：
+- 医保前置机
+- 共享目录或 FTP
 
-Format:
-- txt files
+载体：
+- txt 文件
 
-Flow:
-1. files are pushed to a designated front-machine directory
-2. hospital staff or system imports the txt files
-3. the system parses the files
-4. parsed data is stored in the local database
-5. settlement configuration is updated from parsed rules where needed
+常见流程：
+1. 文件被下发到前置机指定目录
+2. 医院侧人工或系统读取 txt
+3. 解析文件内容
+4. 写入本地数据库
+5. 必要时驱动医保结算配置更新
 
-These files may include:
-- drug base information
-- price rules
-- procurement rules
-- distributor data
-- reimbursement conditions
-- reimbursement-ratio rules
-- high-price-drug rules
-- national-code mapping
-- catalog-rule data
+文件中可能包含：
+- 药品基础信息
+- 价格规则
+- 采购规则
+- 配送企业信息
+- 医保可报销条件
+- 报销比例规则
+- 高价药规则
+- 国家码关系
+- 医保目录规则
 
-### Diagnosis and treatment item catalog, material catalog
+### 诊疗项目目录、耗材目录
 
-Source:
-- Shanghai insurance settlement item information website
+来源：
+- 上海市医保结算项目信息网
 
-Format:
-- usually Excel or website-issued announcements
+载体：
+- 通常是 Excel 或网站公告
 
-Flow:
-1. operations staff gets the update notice
-2. obtains the Excel or announcement content
-3. imports via management page or maintains manually
+常见流程：
+1. 运维或管理员关注公告
+2. 获取 Excel 或公告内容
+3. 通过管理页面导入，或人工维护
 
-### Physician catalog
+### 医师目录
 
-Flow:
-1. register or file physician information on the insurance website
-2. obtain center physician code
-3. import by Excel or maintain manually in the local system
+常见流程：
+1. 在医保网站登记或备案
+2. 获取中心医师代码
+3. 通过 Excel 导入或手工维护到本地系统
 
-### Department catalog
+### 科室目录
 
-Characteristics:
-- usually fixed catalog
-- often distributed with interface documents
-- may be imported by Excel or entered manually
+特点：
+- 通常是固定目录
+- 常随接口文档下发
+- 可通过 Excel 导入或人工录入
 
-### Shanghai code and national code
+### 上海码与国家码
 
-Important distinction:
-- diagnosis and treatment items may have both Shanghai code and national code
-- physician records may also need both Shanghai code and national code
-- the data model should support one local record mapping to multiple insurance-side codes by time range
+关键点：
+- 诊疗项目可能同时有上海码和国家码
+- 医师也可能同时有上海码和国家码
+- 数据模型应支持一个本地记录在不同时间段映射多个医保侧编码
 
-## Reconciliation Notes
+## 三、对账与补偿
 
-The source materials mention daily reconciliation:
-- compare daily totals
-- if totals are imbalanced, fetch center details and compare with local details
-- for extra local records, perform account correction
-- phase-5 may require correction-application printing
-- National-platform cases may require reversal handling
+资料提到日常对账逻辑：
+- 比较每日总账
+- 如果不平，取中心明细与本地明细对比
+- 本地多出的数据可能需要改账
+- 五期场景可能需要打印改账申请
+- 国家医保场景可能需要冲正或撤销
 
-Mention these when the user asks about operations or after-settlement exception flows.
+当任务涉及运维、异常处理、补录、补传、回退时，应优先补充这些内容。

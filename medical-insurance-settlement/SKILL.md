@@ -1,103 +1,211 @@
 ---
 name: medical-insurance-settlement
-description: Comprehensive medical insurance settlement knowledge and implementation guide focused on Shanghai HIS scenarios, including settlement concepts, amount formulas, National Healthcare Security Platform workflows, Shanghai phase-5 workflows, local-calculation workflows, pediatric and student insurance upload flows, cadre healthcare secondary-settlement logic, catalog maintenance, field mapping, and special settlement flags. Use when Codex needs to read or explain medical-insurance documents, sort business rules, design or review HIS medical-insurance modules, summarize settlement formulas, explain upload methods, map reimbursement fields, or turn domain knowledge into product, development, testing, or implementation guidance.
+description: 面向上海 HIS 场景的医保结算知识与实现指南，覆盖医保基础概念、金额公式、国家医保平台流程、上海五期流程、本地计算流程、儿保与学保上传流程、干保二次结算逻辑、目录维护、字段映射、特殊结算标志与配置规则。适用于阅读和解释医保文档、梳理业务规则、分析或修改需求、阅读或修改医保相关代码、评审结算逻辑、总结结算公式、说明上传方式、映射报销字段，或将医保领域知识沉淀为产品、开发、测试和实施资料。该 skill 必须持续演进：每次使用它完成医保需求分析、代码阅读、代码修改、问题排查、文档对照实现等工作后，都应检查是否有新知识需要写回 skill，并定期瘦身，避免内容膨胀，持续总结、去重、合并重复规则。
 ---
 
-# Medical Insurance Settlement
+# 医保结算知识 Skill
 
-## Overview
+## 概述
 
-Use this skill to analyze, explain, and structure Chinese medical-insurance settlement knowledge, especially Shanghai hospital information system scenarios. Focus on turning scattered rules, formulas, interface behaviors, and configuration items into clear business explanations and implementation-ready outputs.
+使用本 skill 分析、解释、整理中国医保结算知识，重点面向上海医院信息系统场景。目标是把分散在文档、代码、配置、接口和口头规则里的知识，转成可复用、可实现、可验证的业务与技术说明。
 
-## Workflow
+## 使用流程
 
-1. Identify the user's goal.
-   Common goals include:
-   - explain concepts and formulas
-   - summarize a policy or product document
-   - compare National Healthcare Security Platform, Shanghai phase-5, and local settlement
-   - clarify how settlement data is uploaded
-   - derive product requirements, design notes, test cases, or implementation rules
+1. 先识别当前任务目标。
+   常见目标包括：
+   - 解释医保概念和公式
+   - 总结政策文档、产品文档、接口文档
+   - 对比国家医保、上海五期、本地计算三类结算路径
+   - 说明医保上传方式
+   - 产出需求分析、设计说明、测试要点、实现规则
+   - 阅读代码、修改代码、排查医保结算问题
 
-2. Identify the scope.
-   Decide whether the request is mainly about:
-   - core settlement concepts
-   - settlement formulas
-   - settlement modes and patient-type routing
-   - upload interfaces and upload timing
-   - base catalog import and code mapping
-   - special rules such as bundle settlement, quota self-pay, restriction flags, dual vouchers, or cadre healthcare
+2. 再识别当前任务范围。
+   判断重点属于哪一类：
+   - 基础概念
+   - 结算公式
+   - 结算模式与分流规则
+   - 上传接口与上传时机
+   - 医保目录与编码同步
+   - 特殊规则，如组套、定额自负、限用标志、双凭证、干保
+   - 代码实现、数据库、存储过程、字段映射
 
-3. Load only the needed references.
-   Reference map:
-   - Core concepts and common formulas: `references/core-concepts.md`
-   - Settlement modes and routing rules: `references/settlement-modes.md`
-   - Upload methods, interfaces, and catalog synchronization: `references/upload-and-sync.md`
-   - Configuration items and special settlement rules: `references/configurations-and-special-rules.md`
-   - Worked examples and field mapping: `references/examples-and-mapping.md`
+3. 按需加载参考资料。
+   参考文件分工如下：
+   - 基础概念与通用公式：`references/core-concepts.md`
+   - 结算模式与分流规则：`references/settlement-modes.md`
+   - 上传方式、接口流程与目录同步：`references/upload-and-sync.md`
+   - 配置项与特殊规则：`references/configurations-and-special-rules.md`
+   - 示例、映射关系与测试思路：`references/examples-and-mapping.md`
+   - 持续维护、知识回写与瘦身规则：`references/maintenance-and-evolution.md`
 
-4. Normalize terminology before answering.
-   Keep the following distinctions explicit:
-   - `geren-zifei` / personal self-pay outside insurance scope: usually full self-pay or over-limit self-pay
-   - `fenlei-zifu` / category self-burden: inside insurance scope but paid first by the patient according to category rules
-   - `geren-zifu` / personal burden after reimbursement: inside settlement scope after fund reimbursement
-   - `geren-zifu-total` / personal self-pay in insurance path: usually `geren-zifu + fenlei-zifu`
-   - `geren-xianjin-zhifu` / actual out-of-pocket cash: usually `geren-zifu-total + geren-zifei`
-   - `yibao-jiesuan-fanwei-feiyong-zonge` is not the same as `jiaoyi-feiyong-zonge`
+4. 回答前统一术语口径。
+   必须明确区分以下概念：
+   - `个人自费`：医保范围外费用，通常是全自费或超限额自费
+   - `分类自负`：医保范围内，但按政策先由个人承担的部分
+   - `个人自负`：医保范围内，医保报销后仍由个人承担的部分
+   - `个人自付`：通常等于 `个人自负 + 分类自负`
+   - `个人现金支付`：通常等于 `个人自付 + 个人自费`
+   - `医保结算范围费用总额` 不等于 `交易费用总额`
 
-5. State the settlement path clearly.
-   When explaining a scenario, always classify it into one of these paths:
-   - National platform real-time settlement
-   - Shanghai phase-5 real-time settlement
-   - HIS local calculation
-   - Shanghai phase-5 plus local secondary calculation
-   - local calculation plus real-time upload
+5. 回答时先明确结算路径。
+   每个场景都尽量先归类到以下路径之一：
+   - 国家医保实时结算
+   - 上海五期实时结算
+   - HIS 本地计算
+   - 上海五期 + 本地二次计算
+   - 本地计算 + 实时上传
 
-6. Make implementation boundaries explicit.
-   When the user is asking from a product or development angle, separate:
-   - what HIS calculates locally
-   - what HIS uploads
-   - what the insurance center calculates and returns
-   - what configuration data must exist before settlement
+6. 从产品或开发视角回答时，必须拆开边界。
+   需要分别说明：
+   - HIS 本地算什么
+   - HIS 上传什么
+   - 医保中心算什么、返回什么
+   - 结算前依赖哪些配置数据
 
-## Output Rules
+7. 在任务结束前执行知识回写与瘦身检查。
+   只要这次任务有新的医保认知，就应把知识补回 skill。
+   如果发现内容重复、表达分散、文件膨胀，也要顺手瘦身整理。
 
-When answering, prefer this order unless the user asks otherwise:
+## 输出规则
 
-1. settlement mode or business background
-2. key concepts
-3. formulas
-4. upload or interface flow
-5. special rules or exceptions
-6. risks, ambiguities, or items that depend on local policy configuration
+除非用户另有要求，优先按以下顺序组织输出：
 
-If the user asks for a document summary, produce:
-- a terminology section
-- a formula section
-- a workflow section
-- a configuration section
-- an implementation or testing checklist when helpful
+1. 业务背景或结算模式
+2. 核心概念
+3. 计算公式
+4. 上传流程或接口流程
+5. 特殊规则和例外
+6. 风险点、歧义点、依赖本地配置的地方
 
-If the user asks for system design or code guidance, produce:
-- upstream inputs
-- calculation steps
-- outbound interface fields
-- return-field interpretation
-- rollback, retry, and reconciliation concerns
+如果用户要的是文档总结，优先输出：
+- 术语部分
+- 公式部分
+- 流程部分
+- 配置部分
+- 实现或测试清单
 
-## Practical Guidance
+如果用户要的是系统设计、代码分析或实现建议，优先输出：
+- 上游输入
+- 计算步骤
+- 出参或上传字段
+- 返回字段解释
+- 冲正、回滚、重试、对账关注点
 
-- Prefer Chinese business meaning in the explanation, but use stable ASCII aliases in the skill text when needed.
-- If both business and system meanings exist, explain both.
-- If formulas differ between National platform and Shanghai phase-5, show them separately.
-- For local-calculation scenarios, state that the exact final rule depends on fee-category configuration, ratio configuration, upper-limit rules, and special flags.
-- For pediatric or student insurance, explicitly mention that settlement may be local-first and upload-later.
-- For cadre healthcare, explicitly mention secondary calculation on top of phase-5 results where applicable.
-- If the request references invoice amounts, distinguish displayed invoice semantics from raw interface fields.
+## 持续完善
 
-## Cautions
+这个 skill 默认是不完整的，必须在使用过程中持续演进。
 
-- Do not assume all insurance types use the same formula source. Some are center-calculated, some are locally calculated, and some are hybrid.
-- Do not merge `jiaoyi-feiyong-zonge`, `yibao-jiesuan-fanwei-feiyong-zonge`, and `geren-zifei` into a single concept.
-- Do not describe upload as only "calling an interface". In this domain, upload may also mean front-end manual import, pre-machine file distribution, FTP or shared-directory sync, DBF export, or database polling synchronization.
-- Treat examples in the references as explanatory models unless the user confirms they are the production rule set.
+凡是使用本 skill 完成以下任务时：
+- 需求分析
+- 需求修改或需求澄清
+- 阅读代码
+- 修改代码
+- 代码评审
+- 结算问题排查
+- 文档规则与代码实现对照
+- 反查数据库、存储过程、接口字段、配置来源
+
+都必须在结束前做一次“知识回写”检查。
+
+### 需要回写的内容
+
+如果发现以下任一类信息，应更新 skill：
+
+- 新的结算路径、分流规则、参保类型映射
+- 更准确的结算公式
+- 明确的接口名、字段含义、字段映射
+- 特殊标志及其业务意义
+- 代码层面确认的真实规则，用来修正文档层面的模糊表述
+- 关键数据库表、存储过程、枚举、配置来源
+- 优先级规则、覆盖规则、例外规则
+- 冲正、回退、对账、补传、重试规则
+- 重要歧义点、医院本地化差异点、尚未确认的问题
+- 更清晰的示例、测试样例、边界场景
+
+### 回写到哪里
+
+- `SKILL.md`：适用于触发条件、整体流程、使用规则发生变化
+- `references/core-concepts.md`：适用于术语定义、通用公式
+- `references/settlement-modes.md`：适用于结算模式、分流逻辑
+- `references/upload-and-sync.md`：适用于上传流程、同步方式、接口时机
+- `references/configurations-and-special-rules.md`：适用于配置来源、特殊规则、优先级
+- `references/examples-and-mapping.md`：适用于示例、字段映射、测试模式
+- `references/maintenance-and-evolution.md`：适用于代码定位、已知缺口、维护方法、瘦身规则
+
+### 如何回写
+
+1. 优先做小而准的补充，不做无意义的大改。
+2. 原有内容有价值时尽量保留；确认错误时再修正。
+3. 不确定的信息要明确标记“不确定”，不要伪装成事实。
+4. 尽量区分：
+   - 文档明确说明
+   - 根据上下文推断
+   - 已由代码确认
+   - 尚未解决
+5. 如果代码与文档冲突，要把两者都记下来，并注明当前哪个更像真实生效规则。
+6. 如果路径、字段、表名、过程名、接口号对后续有帮助，应明确写入。
+7. 不要等用户提醒才更新 skill，把回写视为使用 skill 的一部分。
+
+### 最低回写标准
+
+每次完成非 trivial 的任务后，至少自查这三个问题：
+
+- 我是否学到了新的公式细节？
+- 我是否学到了新的字段、映射、代码位置、配置来源？
+- 我是否发现了未来 agent 应该提前知道的歧义点或坑？
+
+只要有一个答案是“是”，就应该更新 skill。
+
+## 定期瘦身
+
+这个 skill 不仅要持续补充，也必须持续瘦身，避免无限膨胀。
+
+### 什么时候瘦身
+
+出现以下情况时，应做一次整理：
+
+- 同一个规则在多个文件重复出现
+- 同一概念有多种说法但本质相同
+- 某个 reference 文件已经明显变长、变散
+- 新增内容只是旧内容的细化或变体
+- 多次任务后累积了很多局部补丁式描述
+
+### 瘦身原则
+
+1. 保留高价值、可复用、可验证的信息。
+2. 删除低价值重复话术，不删除核心知识。
+3. 合并重复规则，保留一份主说明，其余位置改为引用或简述。
+4. 把相近知识集中到最合适的 reference 文件里。
+5. 示例只保留最能说明问题的版本，避免重复算例泛滥。
+6. 对已经确认的共性规律做总结，不要无限堆砌个案。
+7. 如果某条知识只适用于个别医院或个别项目，要明确标注局部适用，避免污染通用规则。
+
+### 瘦身目标
+
+瘦身后应达到：
+
+- 结构更清晰
+- 重复更少
+- 术语更统一
+- 重点更突出
+- 新 agent 更容易快速上手
+
+## 实用要求
+
+- 回答用户时优先使用中文业务术语。
+- 如果同一个概念同时有业务含义和系统含义，两个都要说清楚。
+- 如果国家医保和上海五期的公式不同，必须拆开写。
+- 对于本地计算场景，要明确最终结果通常依赖费别、自费比例、上下限、特殊标志等配置。
+- 对于儿保、学保，要明确“先本地算，再上传”。
+- 对于干保，要明确“先实时结算，再二次本地计算”。
+- 如果任务中发现了新知识，在结束前更新 skill。
+- 如果任务中发现了重复、冗余、碎片化描述，在结束前顺手整理。
+
+## 注意事项
+
+- 不要假设所有医保类型都使用同一套公式来源。有的是中心算，有的是本地算，有的是混合算。
+- 不要把 `交易费用总额`、`医保结算范围费用总额`、`个人自费` 混为一谈。
+- 不要把“上传”只理解成“调用接口”。在这个领域里，上传也可能是共享目录导入、FTP 同步、Excel 导入、DBF 导出、数据库轮询同步。
+- 除非用户明确确认，否则 reference 里的示例优先视为解释模型，不默认等于生产最终规则。
+- 完成较大任务后，不要跳过 skill 自身是否应更新、是否应瘦身的检查。
