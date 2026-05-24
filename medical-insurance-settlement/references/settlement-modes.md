@@ -116,3 +116,57 @@
 -> 中心返回内容
 -> 是否有二次计算或二次上传
 ```
+## 项目沉淀：`onelink-micro-insurance-sh-ybqpsq` 上海门诊链路
+
+以下内容为代码确认，适用于项目 `D:\ideaproject\onelink-micro-insurance-sh-ybqpsq` 当前上海门诊实现。
+
+### 1. 原上海医保（`wonders/shangHai`）
+
+- 主要入口类：`ShangHaiInsuranceOutpService`
+- 门诊预挂号：`prepareRegisterOp`
+- 门诊挂号确认：`registerConfirmOp`
+- 门诊预结算：`prepareSettleOp`
+- 门诊结算确认：`settleConfirmOp`
+- 费用明细上传：`chargeDetailUpload`
+
+结算模式特征：
+- 这是“上海医保五期实时结算”实现，不是国家医保 `2201/2204/2206/2207` 这一套。
+- 预挂号阶段就会把挂号费、诊疗费、其他费用拆分后组装 `SH01`。
+- 预结算阶段会先把本地费用明细转成 `BillDetailOption`，按 50 条一批上传，再调用 `SI11`。
+- 结算确认阶段调用 `SI12`，并把医保结算主表、医保结算细表落回本地库。
+
+### 2. 国家医保上海门诊（`nationalInsurance/shangHai`）
+
+- 主要入口类：`ShangHaiNationalInsuranceOutpService`
+- 门诊预挂号：`prepareRegisterOp`
+- 门诊挂号确认：`registerConfirmOp`
+- 门诊预结算：`prepareSettleOp`
+- 门诊结算确认：`settleConfirmOp`
+- 门诊挂号国家医保接口：`registerOutp`
+- 门诊就诊信息上传：`registerInformationUpload` / `visitInformationUpload`
+- 门诊费用明细上传：`chargeDetailUpload`
+- 门诊预结算国家医保接口：`outpPrepareSettle`
+- 门诊结算国家医保接口：`outpSettle`
+
+结算模式特征：
+- 这是“国家医保实时结算”实现，主链路是 `2201 -> 2203(条件触发) -> 2204 -> 2206 -> 2207`。
+- 预挂号如果传了 `diseaseCode`，会先查门慢特备案，再决定是否插入 `2203`。
+- 预结算如果没有既有挂号记录，会走“只挂号不收挂号费”的补挂号分支。
+- 预结算后仍会向旧上海医保门诊结算主表插入数据，目的是兼容原有下游流程，不代表实际结算平台变回上海医保。
+
+### 3. 妇产医院独立版 FCYY
+
+FCYY 不是新的医保中心，而是在两条主链路上叠加医院本地差异。
+
+原上海医保 FCYY：
+- 入口类：`wonders/shangHaiFCYY/ShangHaiInsuranceOutpServiceFCYY`
+- 整体流程与原上海医保一致。
+- 额外差异：预挂号和预结算前会校验 `outpApptRecordId` 预约记录。
+- 费用明细上传阶段支持 `DRUG_SETTLE_RANGE_EXPENSE_CAP` 药品结算范围封顶。
+
+国家医保 FCYY：
+- 入口类：`nationalInsurance/shangHaiNationalFCYY/ShangHaiNationalInsuranceOutpServiceFCYY`
+- 整体流程与国家医保上海门诊一致，但叠加更多医院本地特例。
+- 额外支持 `picCode/picName` 病种上传分支。
+- 支持医保“一码付”签约状态查询与支付凭证生成。
+- 预结算前会识别 `rxyFlag=1` 的“自费转医保”明细，改走单独分支 `processSelfToInsurSettlement`。

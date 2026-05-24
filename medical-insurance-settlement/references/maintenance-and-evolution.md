@@ -162,3 +162,52 @@
 5. 双凭证汇总与封顶逻辑
 6. 干保二次结算的实现入口
 7. 对账、冲正、撤销、补传的实现路径
+## 项目沉淀：`onelink-micro-insurance-sh-ybqpsq` 代码入口与维护关注点
+
+以下内容为代码确认，适用于项目 `D:\ideaproject\onelink-micro-insurance-sh-ybqpsq`。
+
+### 一、门诊主入口定位
+
+- Web 统一入口：`onelink-micro-insurance-service/src/main/java/com/zoe/optimus/service/insur/web/InsuranceManageController.java`
+- 控制器统一接口：`/api/insur/insurManager/insurInterface`
+- 分发表：`InsurInterfaceFactoryService`
+- 真实类与方法由 `InsurConfigDict` 动态决定，不是 controller 里写死某个上海类。
+
+结论：
+- 分析上海门诊接口时，先看 `insuranceMessage.insurCatalog + interfaceId + outpInpCode`。
+- 然后再到 `InsurInterfaceFactoryService` / `InsurManageService.getInsurClassAndMethodCache(...)` 确认落到哪一个 `ShangHai*` 服务类。
+
+### 二、当前项目中应优先关注的门诊类
+
+原上海医保：
+- `onelink-micro-insurance-service/src/main/java/com/zoe/optimus/service/insur/service/wonders/shangHai/ShangHaiInsuranceOutpService.java`
+- `onelink-micro-insurance-service/src/main/java/com/zoe/optimus/service/insur/service/wonders/shangHai/ShangHaiInsurancePublicService.java`
+
+国家医保上海：
+- `onelink-micro-insurance-service/src/main/java/com/zoe/optimus/service/insur/service/nationalInsurance/shangHai/ShangHaiNationalInsuranceOutpService.java`
+- `onelink-micro-insurance-service/src/main/java/com/zoe/optimus/service/insur/service/nationalInsurance/shangHai/ShangHaiNaitonalInsurancePublicService.java`
+
+FCYY 独立版：
+- `onelink-micro-insurance-service/src/main/java/com/zoe/optimus/service/insur/service/wonders/shangHaiFCYY/ShangHaiInsuranceOutpServiceFCYY.java`
+- `onelink-micro-insurance-service/src/main/java/com/zoe/optimus/service/insur/service/nationalInsurance/shangHaiNationalFCYY/ShangHaiNationalInsuranceOutpServiceFCYY.java`
+
+公共 DAO：
+- `ShanghaiCommonDao`
+- `ShanghaiInsuranceCommonDao`
+
+### 三、这套项目里真实生效的维护关注点
+
+- 原上海医保门诊预结算依赖费用缓存表 `CHA_OUTP_CHARGE_DETAIL_CACHE`，缓存不全时会回落主表 `CHA_OUTP_CHARGE_DETAIL`。
+- 原上海医保门诊和 FCYY 版都会过滤数量小于 0 的退费明细，分析预结算差异时不要直接把前端传入 items 当最终上传集合。
+- 国家医保上海门诊在预结算成功后，会额外往旧上海医保门诊结算主表写兼容数据；看到两套表同时有记录时，不要误判为重复结算。
+- 国家医保 FCYY 的 `chargeDetailUploadV2` 有“明细重复则先撤销再重传”的补偿逻辑，这属于代码确认的真实行为。
+- 国家医保 FCYY 存在 `rxyFlag=1` 的“自费转医保”分支，分析费用上传遗漏、结算金额不一致时必须先判断是否进入了该分支。
+- FCYY 门诊流程普遍多一层 `outpApptRecordId` 预约状态校验，排查预挂号/预结算报错时要先排除预约状态问题。
+- FCYY 国家医保的一码付逻辑与 `cardType=3`、`stasFlag`、自付金额是否大于 0 强相关，结算结果返回里可能追加支付凭证字段。
+
+### 四、后续再分析上海门诊时的建议顺序
+
+1. 先确认是原上海医保、国家医保，还是 FCYY 独立版。
+2. 再确认是预挂号、挂号确认、预结算、结算确认中的哪一步。
+3. 再看是否命中了病种上传、电子凭证、自费转医保、一码付、药品封顶这些本地特例。
+4. 最后才看金额计算和落库表，避免一开始就在错误分支里追代码。

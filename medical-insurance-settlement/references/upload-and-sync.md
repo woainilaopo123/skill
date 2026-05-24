@@ -154,3 +154,62 @@
 - 国家医保场景可能需要冲正或撤销
 
 当任务涉及运维、异常处理、补录、补传、回退时，应优先补充这些内容。
+## 项目沉淀：`onelink-micro-insurance-sh-ybqpsq` 上海门诊上传顺序
+
+以下内容为代码确认，适用于项目 `D:\ideaproject\onelink-micro-insurance-sh-ybqpsq`。
+
+### 1. 原上海医保门诊（`ShangHaiInsuranceOutpService`）
+
+预挂号链路：
+1. HIS 按挂号费、诊疗费、其他费用拆分项目。
+2. 组装 `SH01` 门诊预挂号请求。
+3. 返回结果落 `医保预挂号表`，并写入兼容原流程的医保结算主表数据。
+
+挂号确认链路：
+1. 通过 `buildRegisterPayRequestMessage` 组装确认包。
+2. 调用 `SH02`。
+3. 本地执行 `registerOpConfirmLocalOperater`，补写结算主表与细表。
+
+预结算链路：
+1. 从缓存表 `CHA_OUTP_CHARGE_DETAIL_CACHE` 取费用明细，不足时回落查 `CHA_OUTP_CHARGE_DETAIL`。
+2. 过滤数量小于 0 的退费明细。
+3. 费用明细先拆成 `BillDetailOption`，按每批 50 条调用 `chargeDetailUpload`。
+4. 汇总账单后调用 `SI11`。
+
+结算确认链路：
+1. 基于最后一次预结算数据组装 `SI12` 请求。
+2. 调用 `SI12`。
+3. 本地落 `InsOutSettleInfo` 与 `OutpInsurSettleDetail`。
+
+### 2. 国家医保上海门诊（`ShangHaiNationalInsuranceOutpService`）
+
+预挂号链路：
+1. 查患者基础信息，必要时用证件号反查 `psnNo`。
+2. 如有 `diseaseCode`，先走疾病备案校验。
+3. 调 `2201` 挂号。
+4. 门慢特场景补调 `2203`。
+5. 构造一条挂号费用 `2204` 明细。
+6. 调 `2206` 预结算。
+
+预结算链路：
+1. 若无挂号记录，先补做“无挂号费挂号”。
+2. 调 `2203` 就诊信息上传。
+3. 调 `2204` 费用明细上传。
+4. 调 `2206` 预结算。
+5. 结果再写回旧上海医保门诊结算主表，供旧链路复用。
+
+结算确认链路：
+1. 直接调国家医保结算确认接口 `2207` 对应实现 `outpSettle`。
+2. 结算后按本地规则重算 `cashPay/selfPay/fundPay` 展示口径。
+
+### 3. FCYY 特例
+
+原上海医保 FCYY：
+- 预挂号、预结算前多一步 `outpApptRecordId` 预约状态校验。
+- `chargeDetailUpload` 在标准费用处理后再套 `DRUG_SETTLE_RANGE_EXPENSE_CAP` 封顶规则。
+
+国家医保 FCYY：
+- 预挂号阶段支持 `picCode/picName`，除 `diseaseCode` 外还可走 `registerInformationUploadForPic`。
+- 挂号费用上传使用 `chargeDetailUploadV2`，若报“明细流水号重复”，会先调用 `outpChargeDetailCancel` 撤销，再重新上传。
+- 预结算阶段若发现 `rxyFlag=1`，走 `processSelfToInsurSettlement`，只上传“自费转医保”明细，不走全量明细。
+- `cardType=3` 且存在自付金额时，会补查“一码付”签约状态，并可能生成支付凭证。
