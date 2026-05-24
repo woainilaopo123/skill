@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Change Standard"
+  short_description: "严格执行代码修改前检查、修改约束、归档、复盘与自动审查流程"
+  default_prompt: "Use $code-change-standard to handle this code modification task with requirement-id checks, git pull, archive lookup, minimal edits, and post-change review."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "医保结算知识库"
+  short_description: "上海医保结算、上传、公式与系统实现知识 skill。"
+  default_prompt: "Use $medical-insurance-settlement to梳理医保结算规则、公式、上传方式和系统设计要点。"
