@@ -19,7 +19,7 @@ Follow this sequence for every code change request:
 3. Run `git pull` before reading code deeply or editing files.
 4. If `git pull` conflicts, stop immediately and report the conflict locations to the user.
 5. Read project-specific skills under `project/.skill/`.
-6. Read the archive file `D:/arch/projectName.md` if it exists.
+6. Read the archive file `F:/arch/projectName.md` if it exists.
 7. Only after all required information is present, inspect code and make the smallest safe change.
 8. After editing, report changed file ranges, risk assessment, code review, and archive updates.
 
@@ -33,7 +33,7 @@ Treat the following items as mandatory gates:
    - the current response JSON
    - optionally propose the expected response JSON after the change
 3. Read any project skills under `project/.skill/`.
-4. Check whether `D:/arch/projectName.md` exists. If it exists, read it before code inspection.
+4. Check whether `F:/arch/projectName.md` exists. If it exists, read it before code inspection.
 5. Keep all file edits in UTF-8 and avoid introducing encoding corruption.
 6. If any mandatory information is missing, ask for all missing items in one message, then wait.
 
@@ -74,9 +74,9 @@ Always finish with these outputs:
 
 Write archives after the change:
 
-1. Ensure the archive root `D:/arch` exists. Create it if needed.
-2. Write the main archive file as `D:/arch/<requirement-id>-Archive.md`.
-3. If the user reports a follow-up problem for a previous requirement and supplies a new requirement ID, write the file as `D:/arch/<old-requirement-id>-<new-requirement-id>-Archive.md`.
+1. Ensure the archive root `F:/arch` exists. Create it if needed.
+2. Write the main archive file as `F:/arch/<requirement-id>-Archive.md`.
+3. If the user reports a follow-up problem for a previous requirement and supplies a new requirement ID, write the file as `F:/arch/<old-requirement-id>-<new-requirement-id>-Archive.md`.
 4. Archive enough detail that the next agent can recover context quickly.
 
 Use this structure for requirement archives:
@@ -95,7 +95,7 @@ Use this structure for requirement archives:
 
 When the user verifies the change is successful, update the archive with a concise summary of the key information learned during the conversation.
 
-If you discover reusable project-level knowledge, also write or update `D:/arch/projectName.md` with this structure:
+If you discover reusable project-level knowledge, also write or update `F:/arch/projectName.md` with this structure:
 
 ```md
 # 序号 - 日期
@@ -112,7 +112,7 @@ When required information is missing, ask once and list everything missing in a 
 1. 需求号
 2. Java 入参 JSON
 3. 当前响应 JSON
-4. 项目名（用于检查 D:/arch/projectName.md）
+4. 项目名（用于检查 F:/arch/projectName.md）
 
 这些信息补齐后，我再开始读取项目代码和修改。
 ```
