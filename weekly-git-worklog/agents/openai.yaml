@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weekly Git Worklog"
+  short_description: "按周提取本地 Git 提交并输出逐日工作日志"
+  default_prompt: "Use $weekly-git-worklog to summarize a specific author's work from local git repositories into daily lines."
